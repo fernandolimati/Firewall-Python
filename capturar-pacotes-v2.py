@@ -1,5 +1,36 @@
 import subprocess as sub
 from datetime import datetime
+import requests
+
+def consultaWhiteList(ip):
+    arq = open("whitelist.txt", "r")
+    for linha in arq:
+        ips = linha.split(";")
+        for ipLido in ips:
+            if(ipLido == ip):return True
+    arq.close()
+    return False
+
+def consultaIP(ip):
+    api_key = 'CwUJoQrItYeBQR0PzwezKhO3afrvB8mM1GCNmEdb'
+    request = 'https://www.abuseipdb.com/check/%s/json?key=%s' % (ip, api_key)
+
+    r = requests.get(request)
+    #try:
+    data = r.json()
+    if data == []:
+        return False
+    else:
+
+        try:
+            for record in data:
+                print("IP:{} / Pais de Origem:{} / Categoria:{} / Adicionado:{}".format(ip, record['country'],record['category'],record['created']))
+        except (ValueError, KeyError, TypeError):
+            try:
+                print("IP:{} / Pais de Origem:{} / Categoria:{} / Adicionado:{}".format(ip, data['country'],data['category'],data['created']))
+            except (ValueError, KeyError, TypeError):
+                print("Erro JSON")
+    return True
 
 def main():
     try:
@@ -21,10 +52,14 @@ def main():
             ipIN = input[0]+"."+input[1]+"."+input[2]+"."+input[3]
             portOut = output[4]
             ipOut = output[0]+"."+output[1]+"."+output[2]+"."+output[3]
-            arq.write(data+"|"+time+"|"+ipIN+"|"+portIN+"|"+ipOut+"|"+portOut+";")
+            if(not consultaWhiteList(ipIN)):
+                arq.write(data + "|" + time + "|" + ipIN + "|" + portIN + "|" + ipOut + "|" + portOut + ";")
+                if (consultaIP(ipIN)): print("Blacklisted!")
+
         arq.close()
     except Exception:
         pass
 
-
 main()
+
+#nohup python capturar-pacotes-v2.py > /dev/null 2>&1&
